@@ -106,16 +106,8 @@ function! s:TmuxAwareResize(direction)
     let right = leftmost+width-1
     let bot = topmost+height+1
 
-    if ((a:direction == 'h' && left == 1)
-            || (a:direction == 'j' && bot == screenheight)
-            || (a:direction== 'k' && top == 1)
-            || (a:direction == 'l' && right == screenwidth)) " i'm on edge
-
-        if (a:direction == 'h' || a:direction == 'l')
-            let l:resize_count = g:tmux_resizer_vertical_resize_count
-        else
-            let l:resize_count = g:tmux_resizer_resize_count
-        endif
+    if (((a:direction == 'h' || a:direction == 'l') && (right == screenwidth)) || ((a:direction == 'k' || a:direction == 'j') && (bot == screenheight)))
+        let l:resize_count = (a:direction == 'h' || a:direction == 'l') ? g:tmux_resizer_vertical_resize_count : g:tmux_resizer_resize_count
         let args = 'resize-pane -' . tr(a:direction, 'hjkl', 'LDUR') . ' ' . l:resize_count
 
         silent call s:TmuxCommand(args)
@@ -123,9 +115,8 @@ function! s:TmuxAwareResize(direction)
         if s:NeedsVitalityRedraw()
             redraw!
         endif
-
     else
         call s:VimResize(a:direction)
     endif
-
 endfunction
+
