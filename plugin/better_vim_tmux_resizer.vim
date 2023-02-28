@@ -79,6 +79,7 @@ function! s:TmuxAwareResize(direction)
     let topmost = info[0].winrow
     let width  = info[0].width
     let height = info[0].height
+    let winbar = info[0].winbar
 
     let screenwidth = &columns
     let screenheight = &lines
@@ -86,7 +87,7 @@ function! s:TmuxAwareResize(direction)
     let left = leftmost
     let top = topmost-1
     let right = leftmost+width-1
-    let bot = topmost+height+1
+    let bot = topmost+height+winbar+1
 
     if (((a:direction == 'h' || a:direction == 'l') && (right == screenwidth)) || ((a:direction == 'k' || a:direction == 'j') && (bot == screenheight)))
         let l:resize_count = (a:direction == 'h' || a:direction == 'l') ? g:tmux_resizer_vertical_resize_count : g:tmux_resizer_resize_count
