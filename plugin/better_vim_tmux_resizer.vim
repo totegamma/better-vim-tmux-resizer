@@ -22,9 +22,9 @@ if !exists("g:tmux_resizer_no_mappings")
     nnoremap <silent> <M-l> :TmuxResizeRight<CR>
 endif
 
-function! s:VimResize(direction)
+function! s:VimResize(direction, opposite)
     " Resize Vim window toward given direction, like tmux
-    let l:current_window_is_last_window = (winnr() == winnr('$'))
+    let l:current_window_is_last_window = xor((winnr() == winnr('$')), a:opposite)
     if (a:direction == 'h' || a:direction == 'k')
         let l:modifier = l:current_window_is_last_window ? '+' : '-'
     else
@@ -89,8 +89,29 @@ function! s:TmuxAwareResize(direction)
     let right = leftmost+width-1
     let bot = topmost+height+winbar+1
 
-    if (((a:direction == 'h' || a:direction == 'l') && (right == screenwidth)) || ((a:direction == 'k' || a:direction == 'j') && (bot == screenheight)))
-        let l:resize_count = (a:direction == 'h' || a:direction == 'l') ? g:tmux_resizer_vertical_resize_count : g:tmux_resizer_resize_count
+    let isLeftMost = (left == 1)
+    let isBottomMost = (bot == screenheight)
+    let isTopMost = (top == 1)
+    let isRightMost = (right == screenwidth)
+
+    let isMotionX = (a:direction == 'h' || a:direction == 'l')
+    let isMotionY = (a:direction == 'j' || a:direction == 'k')
+
+    if (
+       \ (
+         \ isMotionX
+         \ && ((isLeftMost && isRightMost)
+         \ || (isRightMost && (system("tmux display-message -p '#{pane_at_right}'") == 0)))
+       \ )
+       \ ||
+       \ (
+         \ isMotionY
+         \ && ((isTopMost && isBottomMost)
+         \ || (isBottomMost && (system("tmux display-message -p '#{pane_at_bottom}'") == 0)))
+       \ )
+    \  ) " tmux側をリサイズする条件
+
+        let l:resize_count = isMotionX ? g:tmux_resizer_vertical_resize_count : g:tmux_resizer_resize_count
         let args = 'resize-pane -' . tr(a:direction, 'hjkl', 'LDUR') . ' ' . l:resize_count
 
         silent call s:TmuxCommand(args)
@@ -99,7 +120,7 @@ function! s:TmuxAwareResize(direction)
             redraw!
         endif
     else
-        call s:VimResize(a:direction)
+        call s:VimResize(a:direction, (isMotionX && !isLeftMost && !isBottomMost) || (isMotionY && !isRightMost && !isTopMost))
     endif
 endfunction
 
